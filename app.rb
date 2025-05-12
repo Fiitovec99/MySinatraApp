@@ -14,6 +14,8 @@ Dir.mkdir(UPLOADS_PATH) unless Dir.exist?(UPLOADS_PATH)
 
 # 1. Загрузка архива
 post '/upload' do
+  puts ">>> ЗАПРОС НА /upload <<<"
+  puts "params: #{params.inspect}"
   halt 400, json(error: 'No file') unless params[:file]
   halt 400, json(error: 'Missing game name') unless params[:game_name]
   halt 400, json(error: 'Missing username') unless params[:username]
@@ -35,13 +37,17 @@ post '/upload' do
       zip_file.each do |entry|
         path = File.join(target_dir, entry.name)
         FileUtils.mkdir_p(File.dirname(path))
-        entry.extract(path)
+        puts "Извлекаю #{entry.name} -> #{path}"
+        entry.extract(path) { true }
       end
     end
   rescue => e
+    puts "Ошибка при распаковке: #{e.class} - #{e.message}"
+    puts e.backtrace
     FileUtils.rm_rf(target_dir)
-    halt 500, json(error: 'Failed to extract zip')
+    halt 500, json(error: 'Failed to extract zip', detail: e.message)
   end
+
 
   index_path = File.join(target_dir, 'index.html')
   unless File.exist?(index_path)
@@ -59,6 +65,8 @@ get '/game/:id' do
   index_path = File.join(folder, 'index.html')
 
   halt 404, 'Game not found' unless File.exist?(index_path)
+
+  response.headers.delete('X-Frame-Options')
 
   send_file index_path
 end
