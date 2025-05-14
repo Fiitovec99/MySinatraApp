@@ -66,7 +66,7 @@ get '/game/:id' do
 
   halt 404, 'Game not found' unless File.exist?(index_path)
 
-  response.headers.delete('X-Frame-Options')
+  headers['X-Frame-Options'] = 'ALLOWALL'
 
   send_file index_path
 end
